@@ -56,8 +56,11 @@ RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.
     --index-url https://download.pytorch.org/whl/cu124
 
 # Official Hunyuan3D-2.1 source + deps
-RUN git clone --depth 1 https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git
-RUN pip install --no-cache-dir -r Hunyuan3D-2.1/requirements.txt
+# Skip bpy (Blender) — no PyPI wheel for this Python/platform; not needed for GLB API.
+# Skip gradio — UI only; keeps the image smaller for Serverless.
+RUN git clone --depth 1 https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git && \
+    grep -vE '^(bpy|gradio)([=<>]|$)' Hunyuan3D-2.1/requirements.txt > /tmp/hy3d-requirements.txt && \
+    pip install --no-cache-dir -r /tmp/hy3d-requirements.txt
 
 RUN cd /workspace/Hunyuan3D-2.1/hy3dpaint/custom_rasterizer && \
     export CUDA_NVCC_FLAGS="-allow-unsupported-compiler" && \
@@ -85,8 +88,8 @@ COPY worker /app/worker
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# Ensure torchvision fix module is importable
-ENV PYTHONPATH="/workspace/Hunyuan3D-2.1:/workspace/Hunyuan3D-2.1/hy3dshape:/workspace/Hunyuan3D-2.1/hy3dpaint:/app:${PYTHONPATH}"
+# Ensure Hunyuan modules are importable
+ENV PYTHONPATH="/workspace/Hunyuan3D-2.1:/workspace/Hunyuan3D-2.1/hy3dshape:/workspace/Hunyuan3D-2.1/hy3dpaint:/app"
 
 WORKDIR /app
 CMD ["/app/start.sh"]
