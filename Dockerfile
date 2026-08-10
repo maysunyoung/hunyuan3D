@@ -62,9 +62,10 @@ RUN git clone --depth 1 https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git && 
     grep -vE '^(bpy|gradio)([=<>]|$)' Hunyuan3D-2.1/requirements.txt > /tmp/hy3d-requirements.txt && \
     pip install --no-cache-dir -r /tmp/hy3d-requirements.txt
 
+# --no-build-isolation: setup.py imports torch; isolated env has no torch.
 RUN cd /workspace/Hunyuan3D-2.1/hy3dpaint/custom_rasterizer && \
     export CUDA_NVCC_FLAGS="-allow-unsupported-compiler" && \
-    pip install -e .
+    pip install -e . --no-build-isolation
 
 RUN cd /workspace/Hunyuan3D-2.1/hy3dpaint/DifferentiableRenderer && \
     bash compile_mesh_painter.sh
