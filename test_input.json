@@ -1,0 +1,13 @@
+{
+  "input": {
+    "mode": "image_to_3d",
+    "image_url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png",
+    "with_texture": false,
+    "rembg": true,
+    "steps": 20,
+    "guidance_scale": 7.5,
+    "octree_resolution": 256,
+    "seed": 42,
+    "return_base64": true
+  }
+}

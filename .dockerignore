@@ -1,0 +1,13 @@
+.git
+.gitignore
+*.md
+.venv
+__pycache__
+*.pyc
+.DS_Store
+outputs
+*.glb
+*.obj
+.env
+agent-tools
+.cursor
