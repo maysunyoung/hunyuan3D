@@ -27,17 +27,30 @@ jobs:
       packages: write
     steps:
       - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Extra prune
         run: |
           set -eux
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-            /usr/local/share/boost /usr/share/swift /usr/local/.ghcup \
-            /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /opt/hostedtoolcache /usr/share/swift /usr/local/lib/android || true
           sudo docker system prune -af || true
           df -h
 
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
 
       - name: Login to GHCR
         if: github.event.inputs.registry == 'ghcr'
@@ -67,6 +80,7 @@ jobs:
           echo "tags=${BASE}:${TAG},${BASE}:latest" >> "$GITHUB_OUTPUT"
           echo "primary=${BASE}:${TAG}" >> "$GITHUB_OUTPUT"
 
+      # No GHA layer cache — it doubles disk usage and OOMs this image.
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -74,13 +88,10 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          # Layer cache helps rebuilds; first build still heavy
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          provenance: false
+          sbom: false
 
       - name: Summary
         run: |
           echo "### Image ready" >> "$GITHUB_STEP_SUMMARY"
           echo "\`${{ steps.meta.outputs.primary }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "RunPod Container image 填上面这个 tag；若用 GHCR 私有包，需在 Endpoint 配置 registry 凭据。" >> "$GITHUB_STEP_SUMMARY"
