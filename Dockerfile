@@ -25,6 +25,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 WORKDIR /workspace
 
+COPY scripts/patch_mesh_utils.py /tmp/patch_mesh_utils.py
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential git wget curl cmake ninja-build \
     python3 python3-pip python3-venv python3-dev \
@@ -46,6 +48,8 @@ RUN git clone --depth 1 https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git && 
     grep -vE '^(bpy|gradio|open3d|deepspeed|tb_nightly|tensorboard)([=<>]|$)' \
       Hunyuan3D-2.1/requirements.txt > /tmp/hy3d-requirements.txt && \
     pip install --no-cache-dir -r /tmp/hy3d-requirements.txt && \
+    python3 /tmp/patch_mesh_utils.py \
+      /workspace/Hunyuan3D-2.1/hy3dpaint/DifferentiableRenderer/mesh_utils.py && \
     rm -rf /root/.cache /tmp/*
 
 # CUDA extensions (need torch visible → no build isolation)
