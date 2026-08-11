@@ -28,7 +28,8 @@ WORKDIR /workspace
 
 COPY scripts/patch_mesh_utils.py /opt/patch_mesh_utils.py
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=120 update && \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=120 install -y --no-install-recommends \
     build-essential git wget curl cmake ninja-build \
     python3 python3-pip python3-venv python3-dev \
     libegl1-mesa-dev libglib2.0-0 pkg-config \
