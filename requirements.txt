@@ -24,4 +24,6 @@ scipy
 numpy
 Pillow
 requests
+# text_to_3d (diffusers HunyuanDiT fallback) needs T5Tokenizer → sentencepiece
+sentencepiece
 # Hunyuan3D-2.1 also installs its own requirements.txt during Docker build
