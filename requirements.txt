@@ -1,8 +1,11 @@
 runpod>=1.7.0
 huggingface_hub>=0.26.0
-transformers>=4.46.0
-diffusers>=0.31.0
-accelerate>=1.0.0
+# Pin the exact matrix Hunyuan3D-2.1 is tested against. Loose >= pins let pip
+# upgrade diffusers to versions that require Dinov2WithRegistersConfig
+# (transformers>=4.52) while transformers stays on 4.46 → startup import error.
+transformers==4.46.0
+diffusers==0.30.0
+accelerate==1.1.1
 safetensors>=0.4.0
 omegaconf
 opencv-python-headless
