@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Patch multiview_utils.py to load the 2.5D UNet from the in-repo package.
+"""Patch multiview_utils.py to clear diffusers' dynamic-module cache before
+loading the paint pipeline.
 
-The paint model's unet/modules.py is loaded by diffusers through its dynamic
-module mechanism, which has been flaky in this image (the module can be stale,
-partial, or reference imports that fail) and surfaces as:
+The worker's HF cache lives on a persistent network volume. A stale
+`diffusers_modules` directory (left by an earlier diffusers version or an
+interrupted download) makes the dynamic import of the paint model's
+``unet/modules.py`` fail with:
 
     ModuleNotFoundError: No module named 'diffusers_modules.local.modules'
 
-The in-repo copy at hy3dpaint/hunyuanpaintpbr/unet/modules.py is known-good, so
-we preload UNet2p5DConditionModel from there and pass it explicitly to
-DiffusionPipeline.from_pretrained, skipping the dynamic module load entirely.
+Local reproduction with a clean cache loads fine, so we simply purge the
+dynamic-module cache right before DiffusionPipeline.from_pretrained. The
+module files are re-copied on every load, so this is safe.
 
 Idempotent.
 """
@@ -27,19 +29,17 @@ OLD = """        pipeline = DiffusionPipeline.from_pretrained(
         )"""
 
 NEW = """        import os as _os
-        import sys as _sys
-        _hy3dpaint = _os.path.normpath(_os.path.join(_os.path.dirname(__file__), ".."))
-        if _hy3dpaint not in _sys.path:
-            _sys.path.insert(0, _hy3dpaint)
-        from hunyuanpaintpbr.unet.modules import UNet2p5DConditionModel
-        unet = UNet2p5DConditionModel.from_pretrained(
-            _os.path.join(model_path, "unet"), torch_dtype=torch.float16
+        import shutil as _shutil
+        _cache_root = _os.environ.get(
+            "HF_HOME", _os.path.expanduser("~/.cache/huggingface")
         )
+        _dyn_modules = _os.path.join(_cache_root, "modules", "diffusers_modules")
+        if _os.path.isdir(_dyn_modules):
+            _shutil.rmtree(_dyn_modules, ignore_errors=True)
         pipeline = DiffusionPipeline.from_pretrained(
             model_path,
             custom_pipeline=custom_pipeline,
-            torch_dtype=torch.float16,
-            unet=unet,
+            torch_dtype=torch.float16
         )"""
 
 
