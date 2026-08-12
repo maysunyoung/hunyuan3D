@@ -130,7 +130,7 @@ def handler(event: dict) -> dict:
         if mode == "text_to_3d":
             # small preview of intermediate image
             buf = io.BytesIO()
-            image.save(buf, format="JPEG", quality=85)
+            image.convert("RGB").save(buf, format="JPEG", quality=85)
             payload["preview_image_base64"] = base64.b64encode(buf.getvalue()).decode("utf-8")
         return payload
     except Exception as e:
