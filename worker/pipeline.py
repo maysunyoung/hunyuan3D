@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import gc
 import sys
 import time
 from typing import Any, Optional
@@ -28,6 +29,14 @@ for p in (APP_ROOT, os.path.join(APP_ROOT, "hy3dshape"), os.path.join(APP_ROOT, 
 _generator: Optional["Generator"] = None
 
 
+def _mem_log(tag: str) -> None:
+    if not torch.cuda.is_available():
+        return
+    alloc = torch.cuda.memory_allocated() / (1024**3)
+    reserved = torch.cuda.memory_reserved() / (1024**3)
+    print(f"[mem] {tag}: allocated={alloc:.2f}GiB reserved={reserved:.2f}GiB")
+
+
 class Generator:
     def __init__(self, with_texture: bool = False, enable_t23d: bool = False):
         self.device = DEVICE
@@ -39,8 +48,6 @@ class Generator:
         self._loaded_texture = False
         self._loaded_t23d = False
         self._init_shape()
-        if with_texture:
-            self._init_texture()
         if enable_t23d:
             self._init_t23d()
 
@@ -108,9 +115,31 @@ class Generator:
         if LOW_VRAM:
             torch.cuda.empty_cache()
 
+    def _unload_shape(self) -> None:
+        """Free the shape model's VRAM before the much heavier texture phase."""
+        if self.shape is not None:
+            print("[mem] unloading shape model from GPU")
+            del self.shape
+            self.shape = None
+        gc.collect()
+        if LOW_VRAM:
+            torch.cuda.empty_cache()
+
+    def _unload_t2i(self) -> None:
+        """Free the text2image model after it has produced the reference image."""
+        if self.t2i is not None:
+            print("[mem] unloading text2image model from GPU")
+            del self.t2i
+            self.t2i = None
+            self._t2i_kind = None
+        gc.collect()
+        if LOW_VRAM:
+            torch.cuda.empty_cache()
+
     def ensure(self, with_texture: bool = False, enable_t23d: bool = False) -> None:
-        if with_texture:
-            self._init_texture()
+        # Texture is intentionally NOT loaded here: it only loads inside
+        # generate() AFTER the shape model has been unloaded, so shape + texture
+        # never share VRAM (24GB GPUs OOM otherwise).
         if enable_t23d:
             self._init_t23d()
 
@@ -126,7 +155,9 @@ class Generator:
                 out = out[0]
         if not isinstance(out, Image.Image):
             raise RuntimeError(f"unexpected t2i output type: {type(out)}")
-        return out.convert("RGBA")
+        result = out.convert("RGBA")
+        self._unload_t2i()
+        return result
 
     def generate(
         self,
@@ -141,7 +172,6 @@ class Generator:
         max_num_view: int = 6,
         texture_resolution: int = 512,
     ) -> dict[str, Any]:
-        self.ensure(with_texture=with_texture)
         stats: dict[str, Any] = {"time": {}}
         t0 = time.time()
 
@@ -165,12 +195,18 @@ class Generator:
             output_type="trimesh",
         )[0]
         stats["time"]["shape"] = round(time.time() - t, 3)
+        _mem_log("after shape")
 
         white_path = os.path.join(work_dir, "white_mesh.glb")
         mesh.export(white_path)
 
         glb_path = white_path
         if with_texture:
+            # Shape phase is done — free its VRAM before loading the texture
+            # pipeline (multiview diffusion + RealESRGAN + 4K renderer).
+            self._unload_shape()
+            self._init_texture()
+            _mem_log("after texture load")
             if self.tex is None:
                 raise RuntimeError("texture pipeline not loaded")
             # update paint config if requested
@@ -189,6 +225,7 @@ class Generator:
                 save_glb=False,
             )
             stats["time"]["texture"] = round(time.time() - t, 3)
+            _mem_log("after texture")
 
             glb_path = os.path.join(work_dir, "textured_mesh.glb")
             try:

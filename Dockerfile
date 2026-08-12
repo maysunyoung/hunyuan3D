@@ -20,6 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HY3DGEN_MODELS=/runpod-volume/hy3dgen \
     OUTPUT_DIR=/tmp/hunyuan3d_jobs \
     LOW_VRAM=1 \
+    PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
     DEVICE=cuda \
     VIRTUAL_ENV=/opt/venv \
     PATH=/opt/venv/bin:/usr/local/cuda/bin:${PATH} \

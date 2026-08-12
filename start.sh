@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+
 mkdir -p "${HF_HOME:-/runpod-volume/huggingface}" "${OUTPUT_DIR:-/tmp/hunyuan3d_jobs}"
 
 # Optional: pre-warm model list from volume (no-op if missing)
