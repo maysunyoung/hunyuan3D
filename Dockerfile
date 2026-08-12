@@ -27,6 +27,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 WORKDIR /workspace
 
 COPY scripts/patch_mesh_utils.py /opt/patch_mesh_utils.py
+COPY scripts/patch_multiview_utils.py /opt/patch_multiview_utils.py
 
 RUN apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=120 update && \
     apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=120 install -y --no-install-recommends \
@@ -38,7 +39,7 @@ RUN apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=120 update && \
     libxrender1 libeigen3-dev libcgal-dev \
     libxi6 libxkbcommon-x11-0 libsm6 libxext6 libxrender-dev \
     && python3 -m venv /opt/venv \
-    && pip install --upgrade pip setuptools wheel \
+    && pip install --upgrade pip "setuptools<81" wheel \
     && rm -rf /var/lib/apt/lists/* /root/.cache /tmp/*
 
 RUN pip install --no-cache-dir torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 \
@@ -52,6 +53,8 @@ RUN git clone --depth 1 https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git && 
     pip install --no-cache-dir -r /tmp/hy3d-requirements.txt && \
     python3 /opt/patch_mesh_utils.py \
       /workspace/Hunyuan3D-2.1/hy3dpaint/DifferentiableRenderer/mesh_utils.py && \
+    python3 /opt/patch_multiview_utils.py \
+      /workspace/Hunyuan3D-2.1/hy3dpaint/utils/multiview_utils.py && \
     rm -rf /root/.cache /tmp/*
 
 # CUDA extensions (need torch visible → no build isolation)
