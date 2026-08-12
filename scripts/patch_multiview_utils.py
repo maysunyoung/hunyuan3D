@@ -31,9 +31,13 @@ OLD = """        pipeline = DiffusionPipeline.from_pretrained(
 NEW = """        import os as _os
         import shutil as _shutil
         _cache_root = _os.environ.get(
-            "HF_HOME", _os.path.expanduser("~/.cache/huggingface")
+            "HF_MODULES_CACHE",
+            _os.path.join(
+                _os.environ.get("HF_HOME", _os.path.expanduser("~/.cache/huggingface")),
+                "modules",
+            ),
         )
-        _dyn_modules = _os.path.join(_cache_root, "modules", "diffusers_modules")
+        _dyn_modules = _os.path.join(_cache_root, "diffusers_modules")
         if _os.path.isdir(_dyn_modules):
             _shutil.rmtree(_dyn_modules, ignore_errors=True)
         pipeline = DiffusionPipeline.from_pretrained(

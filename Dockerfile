@@ -16,6 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/runpod-volume/huggingface \
     TRANSFORMERS_CACHE=/runpod-volume/huggingface/transformers \
     HF_HUB_CACHE=/runpod-volume/huggingface/hub \
+    HF_MODULES_CACHE=/root/.cache/huggingface/modules \
     HY3DGEN_MODELS=/runpod-volume/hy3dgen \
     OUTPUT_DIR=/tmp/hunyuan3d_jobs \
     LOW_VRAM=1 \
