@@ -139,7 +139,10 @@ class Generator:
     def ensure(self, with_texture: bool = False, enable_t23d: bool = False) -> None:
         # Texture is intentionally NOT loaded here: it only loads inside
         # generate() AFTER the shape model has been unloaded, so shape + texture
-        # never share VRAM (24GB GPUs OOM otherwise).
+        # never share VRAM (24GB GPUs OOM otherwise). Shape IS re-loaded here
+        # when needed (a previous texture job may have unloaded it).
+        if self.shape is None:
+            self._init_shape()
         if enable_t23d:
             self._init_t23d()
 
@@ -172,6 +175,7 @@ class Generator:
         max_num_view: int = 6,
         texture_resolution: int = 512,
     ) -> dict[str, Any]:
+        self.ensure()
         stats: dict[str, Any] = {"time": {}}
         t0 = time.time()
 
