@@ -29,6 +29,7 @@ WORKDIR /workspace
 
 COPY scripts/patch_mesh_utils.py /opt/patch_mesh_utils.py
 COPY scripts/patch_multiview_utils.py /opt/patch_multiview_utils.py
+COPY scripts/patch_simplify_mesh_utils.py /opt/patch_simplify_mesh_utils.py
 
 RUN apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=120 update && \
     apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=120 install -y --no-install-recommends \
@@ -56,6 +57,8 @@ RUN git clone --depth 1 https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git && 
       /workspace/Hunyuan3D-2.1/hy3dpaint/DifferentiableRenderer/mesh_utils.py && \
     python3 /opt/patch_multiview_utils.py \
       /workspace/Hunyuan3D-2.1/hy3dpaint/utils/multiview_utils.py && \
+    python3 /opt/patch_simplify_mesh_utils.py \
+      /workspace/Hunyuan3D-2.1/hy3dpaint/utils/simplify_mesh_utils.py && \
     rm -rf /root/.cache /tmp/*
 
 # CUDA extensions (need torch visible → no build isolation)
